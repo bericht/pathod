@@ -16,9 +16,9 @@ def go_pathoc():
     )
     pa = preparser.parse_known_args()[0]
     if pa.showua:
-        print "User agent strings:"
+        print("User agent strings:")
         for i in http_uastrings.UASTRINGS:
-            print "  ", i[1], i[0]
+            print("  ", i[1], i[0])
         sys.exit(0)
 
     parser = argparse.ArgumentParser(
@@ -180,9 +180,9 @@ def go_pathoc():
             r = data
         try:
             reqs.extend(language.parse_requests(r))
-        except language.ParseException, v:
-            print >> sys.stderr, "Error parsing request spec: %s"%v.msg
-            print >> sys.stderr, v.marked()
+        except language.ParseException as v:
+            print("Error parsing request spec: %s"%v.msg, file=sys.stderr)
+            print(v.marked(), file=sys.stderr)
             sys.exit(1)
     args.requests = reqs
     pathoc.main(args)
@@ -354,7 +354,7 @@ def go_pathod():
     if args.sizelimit:
         try:
             sizelimit = utils.parse_size(args.sizelimit)
-        except ValueError, v:
+        except ValueError as v:
             parser.error(v)
     args.sizelimit = sizelimit
 
@@ -366,14 +366,14 @@ def go_pathod():
 
         try:
             req = language.parse_response(spec)
-        except language.ParseException, v:
-            print >> sys.stderr, "Error parsing anchor spec: %s"%v.msg
-            print >> sys.stderr, v.marked()
+        except language.ParseException as v:
+            print("Error parsing anchor spec: %s"%v.msg, file=sys.stderr)
+            print(v.marked(), file=sys.stderr)
             sys.exit(1)
         try:
             arex = re.compile(patt)
         except re.error:
-            print >> sys.stderr, "Invalid regex in anchor: %s" % patt
+            print("Invalid regex in anchor: %s" % patt, file=sys.stderr)
             sys.exit(1)
         anchors.append((arex, req))
     args.anchors = anchors

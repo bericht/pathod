@@ -1,5 +1,5 @@
 import os
-import cStringIO
+import io
 from libpathod import language, utils
 import tutils
 
@@ -288,7 +288,7 @@ class TestMisc:
         assert v2.value.val == v3.value.val
 
     def test_internal_response(self):
-        d = cStringIO.StringIO()
+        d = io.StringIO()
         s = language.make_error_response("foo")
         language.serve(s, d, {})
 
@@ -444,7 +444,7 @@ class TestInject:
         assert v.offset == "r"
 
     def test_serve(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:i0,'foo'")
         assert language.serve(r, s, {})
 
@@ -543,7 +543,7 @@ class TestRequest:
         assert r[1].method.string() == "GET"
 
     def test_render(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = parse_request("GET:'/foo'")
         assert language.serve(r, s, {}, "foo.com")
 
@@ -594,76 +594,76 @@ class TestWriteValues:
     def test_send_chunk(self):
         v = "foobarfoobar"
         for bs in range(1, len(v)+2):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             language.send_chunk(s, v, bs, 0, len(v))
             assert s.getvalue() == v
             for start in range(len(v)):
                 for end in range(len(v)):
-                    s = cStringIO.StringIO()
+                    s = io.StringIO()
                     language.send_chunk(s, v, bs, start, end)
                     assert s.getvalue() == v[start:end]
 
     def test_write_values_inject(self):
         tst = "foo"
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         language.write_values(s, [tst], [(0, "inject", "aaa")], blocksize=5)
         assert s.getvalue() == "aaafoo"
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         language.write_values(s, [tst], [(1, "inject", "aaa")], blocksize=5)
         assert s.getvalue() == "faaaoo"
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         language.write_values(s, [tst], [(1, "inject", "aaa")], blocksize=5)
         assert s.getvalue() == "faaaoo"
 
     def test_write_values_disconnects(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         tst = "foo"*100
         language.write_values(s, [tst], [(0, "disconnect")], blocksize=5)
         assert not s.getvalue()
 
     def test_write_values(self):
         tst = "foobarvoing"
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         language.write_values(s, [tst], [])
         assert s.getvalue() == tst
 
         for bs in range(1, len(tst) + 2):
             for off in range(len(tst)):
-                s = cStringIO.StringIO()
+                s = io.StringIO()
                 language.write_values(s, [tst], [(off, "disconnect")], blocksize=bs)
                 assert s.getvalue() == tst[:off]
 
     def test_write_values_pauses(self):
         tst = "".join(str(i) for i in range(10))
         for i in range(2, 10):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             language.write_values(s, [tst], [(2, "pause", 0), (1, "pause", 0)], blocksize=i)
             assert s.getvalue() == tst
 
         for i in range(2, 10):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             language.write_values(s, [tst], [(1, "pause", 0)], blocksize=i)
             assert s.getvalue() == tst
 
         tst = ["".join(str(i) for i in range(10))]*5
         for i in range(2, 10):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             language.write_values(s, tst[:], [(1, "pause", 0)], blocksize=i)
             assert s.getvalue() == "".join(tst)
 
     def test_write_values_after(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:da")
         language.serve(r, s, {})
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:pa,0")
         language.serve(r, s, {})
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:ia,'xx'")
         language.serve(r, s, {})
         assert s.getvalue().endswith('xx')
@@ -689,7 +689,7 @@ class TestResponse:
         assert "OK" in [i[:] for i in r.preamble({})]
 
     def test_render(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:m'msg'")
         assert language.serve(r, s, {})
 
@@ -699,13 +699,13 @@ class TestResponse:
         assert "p0" not in s.spec()
 
     def test_raw(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:b'foo'")
         language.serve(r, s, {})
         v = s.getvalue()
         assert "Content-Length" in v
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         r = language.parse_response("400:b'foo':r")
         language.serve(r, s, {})
         v = s.getvalue()
@@ -713,7 +713,7 @@ class TestResponse:
 
     def test_length(self):
         def testlen(x):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             language.serve(x, s, {})
             assert x.length({}) == len(s.getvalue())
         testlen(language.parse_response("400:m'msg':r"))
@@ -722,7 +722,7 @@ class TestResponse:
 
     def test_maximum_length(self):
         def testlen(x):
-            s = cStringIO.StringIO()
+            s = io.StringIO()
             m = x.maximum_length({})
             language.serve(x, s, {})
             assert m >= len(s.getvalue())
@@ -742,7 +742,7 @@ class TestResponse:
         )
         try:
             language.parse_response("400'msg':b:")
-        except language.ParseException, v:
+        except language.ParseException as v:
             assert v.marked()
             assert str(v)
 

@@ -1,4 +1,4 @@
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import threading
 import logging
 import os
@@ -113,7 +113,7 @@ class PathodHandler(tcp.BaseHandler):
                         cipher_list=self.server.ssloptions.ciphers,
                         method=self.server.ssloptions.sslversion,
                     )
-                except tcp.NetLibError, v:
+                except tcp.NetLibError as v:
                     s = str(v)
                     self.info(s)
                     return False, dict(type="error", msg=s)
@@ -165,7 +165,7 @@ class PathodHandler(tcp.BaseHandler):
                 self.rfile, headers, None,
                 method, None, True
             )
-        except http.HttpError, s:
+        except http.HttpError as s:
             s = str(s)
             self.info(s)
             return False, dict(type="error", msg=s)
@@ -177,11 +177,11 @@ class PathodHandler(tcp.BaseHandler):
                 return again, retlog
 
         if not self.server.nocraft and path.startswith(self.server.craftanchor):
-            spec = urllib.unquote(path)[len(self.server.craftanchor):]
+            spec = urllib.parse.unquote(path)[len(self.server.craftanchor):]
             self.info("crafting spec: %s" % spec)
             try:
                 crafted = language.parse_response(spec)
-            except language.ParseException, v:
+            except language.ParseException as v:
                 self.info("Parse error: %s" % v.msg)
                 crafted = language.make_error_response(
                     "Parse Error",
@@ -232,7 +232,7 @@ class PathodHandler(tcp.BaseHandler):
                     cipher_list=self.server.ssloptions.ciphers,
                     method=self.server.ssloptions.sslversion,
                 )
-            except tcp.NetLibError, v:
+            except tcp.NetLibError as v:
                 s = str(v)
                 self.server.add_log(
                     dict(
@@ -433,21 +433,21 @@ def main(args):
             hexdump = args.hexdump,
             explain = args.explain,
         )
-    except PathodError, v:
-        print >> sys.stderr, "Error: %s"%v
+    except PathodError as v:
+        print("Error: %s"%v, file=sys.stderr)
         sys.exit(1)
-    except language.FileAccessDenied, v:
-        print >> sys.stderr, "Error: %s"%v
+    except language.FileAccessDenied as v:
+        print("Error: %s"%v, file=sys.stderr)
 
     if args.daemonize:
         utils.daemonize()
 
     try:
-        print "%s listening on %s:%s"%(
+        print("%s listening on %s:%s"%(
             version.NAMEVERSION,
             pd.address.host,
             pd.address.port
-        )
+        ))
         pd.serve_forever()
     except KeyboardInterrupt:
         pass

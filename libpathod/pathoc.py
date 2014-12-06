@@ -5,8 +5,8 @@ import random
 from netlib import tcp, http, certutils
 import netlib.utils
 
-import language
-import utils
+from . import language
+from . import utils
 import OpenSSL.crypto
 
 
@@ -88,7 +88,7 @@ class Pathoc(tcp.TCPClient):
                     method=self.sslversion,
                     cipher_list = self.ciphers
                 )
-            except tcp.NetLibError, v:
+            except tcp.NetLibError as v:
                 raise PathocError(str(v))
             self.sslinfo = SSLInfo(
                 self.connection.get_peer_cert_chain(),
@@ -110,18 +110,18 @@ class Pathoc(tcp.TCPClient):
         return Response(*ret)
 
     def _show_summary(self, fp, httpversion, code, msg, headers, content):
-        print >> fp, "<< %s %s: %s bytes"%(
+        print("<< %s %s: %s bytes"%(
             code, utils.xrepr(msg), len(content)
-        )
+        ), file=fp)
 
     def _show(self, fp, header, data, hexdump):
         if hexdump:
-            print >> fp, "%s (hex dump):"%header
+            print("%s (hex dump):"%header, file=fp)
             for line in netlib.utils.hexdump(data):
-                print >> fp, "\t%s %s %s"%line
+                print("\t%s %s %s"%line, file=fp)
         else:
-            print >> fp, "%s (unprintables escaped):"%header
-            print >> fp, netlib.utils.cleanBin(data)
+            print("%s (unprintables escaped):"%header, file=fp)
+            print(netlib.utils.cleanBin(data), file=fp)
 
     def print_request(
         self,
@@ -163,21 +163,21 @@ class Pathoc(tcp.TCPClient):
             )
             self.wfile.flush()
             resp = http.read_response(self.rfile, r.method.string(), None)
-        except http.HttpError, v:
-            print >> fp, "<< HTTP Error:", v.message
+        except http.HttpError as v:
+            print("<< HTTP Error:", v.message, file=fp)
         except tcp.NetLibTimeout:
             if ignoretimeout:
                 return
-            print >> fp, "<<", "Timeout"
+            print("<<", "Timeout", file=fp)
         except tcp.NetLibDisconnect: # pragma: nocover
-            print >> fp, "<<", "Disconnect"
+            print("<<", "Disconnect", file=fp)
 
         if req:
             if ignorecodes and resp and resp[1] in ignorecodes:
                 return
 
             if explain:
-                print >> fp, ">> Spec:", r.spec()
+                print(">> Spec:", r.spec(), file=fp)
 
             if showreq:
                 self._show(fp, ">> Request", self.wfile.get_log(), hexdump)
@@ -189,34 +189,34 @@ class Pathoc(tcp.TCPClient):
                     self._show_summary(fp, *resp)
 
             if showssl and self.sslinfo:
-                print >> fp, "Cipher: %s, %s bit, %s"%self.sslinfo.cipher
-                print >> fp, "SSL certificate chain:\n"
+                print("Cipher: %s, %s bit, %s"%self.sslinfo.cipher, file=fp)
+                print("SSL certificate chain:\n", file=fp)
                 for i in self.sslinfo.certchain:
-                    print >> fp, "\tSubject: ",
+                    print("\tSubject: ", end=' ', file=fp)
                     for cn in i.get_subject().get_components():
-                        print >> fp, "%s=%s"%cn,
-                    print >> fp
-                    print >> fp, "\tIssuer: ",
+                        print("%s=%s"%cn, end=' ', file=fp)
+                    print(file=fp)
+                    print("\tIssuer: ", end=' ', file=fp)
                     for cn in i.get_issuer().get_components():
-                        print >> fp, "%s=%s"%cn,
-                    print >> fp
-                    print >> fp, "\tVersion: %s"%i.get_version()
-                    print >> fp, "\tValidity: %s - %s"%(
+                        print("%s=%s"%cn, end=' ', file=fp)
+                    print(file=fp)
+                    print("\tVersion: %s"%i.get_version(), file=fp)
+                    print("\tValidity: %s - %s"%(
                         i.get_notBefore(), i.get_notAfter()
-                    )
-                    print >> fp, "\tSerial: %s"%i.get_serial_number()
-                    print >> fp, "\tAlgorithm: %s"%i.get_signature_algorithm()
+                    ), file=fp)
+                    print("\tSerial: %s"%i.get_serial_number(), file=fp)
+                    print("\tAlgorithm: %s"%i.get_signature_algorithm(), file=fp)
                     pk = i.get_pubkey()
                     types = {
                         OpenSSL.crypto.TYPE_RSA: "RSA",
                         OpenSSL.crypto.TYPE_DSA: "DSA"
                     }
                     t = types.get(pk.type(), "Uknown")
-                    print >> fp, "\tPubkey: %s bit %s"%(pk.bits(), t)
+                    print("\tPubkey: %s bit %s"%(pk.bits(), t), file=fp)
                     s = certutils.SSLCert(i)
                     if s.altnames:
-                        print >> fp, "\tSANs:", " ".join(s.altnames)
-                    print >> fp
+                        print("\tSANs:", " ".join(s.altnames), file=fp)
+                    print(file=fp)
             return True
 
 
@@ -227,7 +227,7 @@ def main(args):
         cnt = 0
         while 1:
             if trycount > args.memolimit:
-                print >> sys.stderr, "Memo limit exceeded..."
+                print("Memo limit exceeded...", file=sys.stderr)
                 return
 
             cnt += 1
@@ -262,8 +262,8 @@ def main(args):
             trycount = 0
             try:
                 p.connect(args.connect_to)
-            except (tcp.NetLibError, PathocError), v:
-                print >> sys.stderr, str(v)
+            except (tcp.NetLibError, PathocError) as v:
+                print(str(v), file=sys.stderr)
                 sys.exit(1)
             if args.timeout:
                 p.settimeout(args.timeout)

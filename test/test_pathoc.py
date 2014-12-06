@@ -1,5 +1,5 @@
 import json
-import cStringIO
+import io
 import re
 
 from libpathod import pathoc, test, version, pathod, language
@@ -57,7 +57,7 @@ class _TestDaemon:
         c.connect()
         if timeout:
             c.settimeout(timeout)
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         for i in requests:
             r = language.parse_requests(i)[0]
             if explain:
@@ -155,13 +155,13 @@ class TestDaemon(_TestDaemon):
     def test_connect_fail(self):
         to = ("foobar", 80)
         c = pathoc.Pathoc(("127.0.0.1", self.d.port))
-        c.rfile, c.wfile = cStringIO.StringIO(), cStringIO.StringIO()
+        c.rfile, c.wfile = io.StringIO(), io.StringIO()
         tutils.raises("connect failed", c.http_connect, to)
-        c.rfile = cStringIO.StringIO(
+        c.rfile = io.StringIO(
             "HTTP/1.1 500 OK\r\n"
         )
         tutils.raises("connect failed", c.http_connect, to)
-        c.rfile = cStringIO.StringIO(
+        c.rfile = io.StringIO(
             "HTTP/1.1 200 OK\r\n"
         )
         c.http_connect(to)

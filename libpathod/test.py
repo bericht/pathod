@@ -1,8 +1,8 @@
 import threading
-import Queue
+import queue
 import requests
 import requests.packages.urllib3
-import pathod
+from . import pathod
 
 requests.packages.urllib3.disable_warnings()
 
@@ -10,7 +10,7 @@ requests.packages.urllib3.disable_warnings()
 class Daemon:
     IFACE = "127.0.0.1"
     def __init__(self, ssl=None, **daemonargs):
-        self.q = Queue.Queue()
+        self.q = queue.Queue()
         self.thread = _PaThread(self.IFACE, self.q, ssl, daemonargs)
         self.thread.start()
         self.port = self.q.get(True, 5)

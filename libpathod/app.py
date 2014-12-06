@@ -1,8 +1,8 @@
 import logging
 import pprint
-import cStringIO
+import io
 from flask import Flask, jsonify, render_template, request, abort, make_response
-import version, language, utils
+from . import version, language, utils
 from netlib import http_uastrings
 
 logging.basicConfig(level="DEBUG")
@@ -119,12 +119,12 @@ def make_app(noapi):
                 r = language.parse_requests(spec)[0]
             else:
                 r = language.parse_response(spec)
-        except language.ParseException, v:
+        except language.ParseException as v:
             args["syntaxerror"] = str(v)
             args["marked"] = v.marked()
             return render(template, False, **args)
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         safe = r.preview_safe()
 
         c = app.config["pathod"].check_policy(safe, app.config["pathod"].request_settings)

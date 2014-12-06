@@ -6,10 +6,11 @@ import os
 import time
 import copy
 import abc
-import contrib.pyparsing as pp
+from . import contrib.pyparsing as pp
 from netlib import http_status, tcp, http_uastrings
 
-import utils
+from . import utils
+from functools import reduce
 
 BLOCKSIZE = 1024
 TRUNCATE = 1024
@@ -233,11 +234,10 @@ class FileGenerator:
         return "<%s"%self.path
 
 
-class _Token(object):
+class _Token(object, metaclass=abc.ABCMeta):
     """
         A specification token. Tokens are immutable.
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def expr(klass): # pragma: no cover
@@ -323,12 +323,12 @@ class ValueGenerate(_Token):
 
         u = reduce(
             operator.or_,
-            [pp.Literal(i) for i in utils.SIZE_UNITS.keys()]
+            [pp.Literal(i) for i in list(utils.SIZE_UNITS.keys())]
         ).leaveWhitespace()
         e = e + pp.Optional(u, default=None)
 
         s = pp.Literal(",").suppress()
-        s += reduce(operator.or_, [pp.Literal(i) for i in DATATYPES.keys()])
+        s += reduce(operator.or_, [pp.Literal(i) for i in list(DATATYPES.keys())])
         e += pp.Optional(s, default="bytes")
         return e.setParseAction(lambda x: klass(*x))
 
@@ -500,7 +500,7 @@ class ShortcutLocation(_Header):
 class ShortcutUserAgent(_Header):
     def __init__(self, value):
         self.specvalue = value
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = ValueLiteral(http_uastrings.get_by_shortcut(value)[2])
         _Header.__init__(self, ValueLiteral("User-Agent"), value)
 
@@ -553,7 +553,7 @@ class PathodSpec(_Token):
                     parseAll=True
                 )
             )
-        except pp.ParseException, v:
+        except pp.ParseException as v:
             raise ParseException(v.msg, v.line, v.col)
 
     @classmethod
@@ -577,7 +577,7 @@ class PathodSpec(_Token):
 
 class Path(_Component):
     def __init__(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = ValueLiteral(value)
         self.value = value
 
@@ -614,7 +614,7 @@ class Method(_Component):
         # If it's a string, we were passed one of the methods, so we upper-case
         # it to be canonical. The user can specify a different case by using a
         # string value literal.
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = ValueLiteral(value.upper())
         self.value = value
 
@@ -792,8 +792,7 @@ class InjectAt(_Action):
         return InjectAt(self.offset, self.value.freeze(settings))
 
 
-class _Message(object):
-    __metaclass__ = abc.ABCMeta
+class _Message(object, metaclass=abc.ABCMeta):
     version = "HTTP/1.1"
 
     def __init__(self, tokens):
@@ -1067,7 +1066,7 @@ def parse_response(s):
         raise ParseException("Spec must be valid ASCII.", 0, 0)
     try:
         return Response(Response.expr().parseString(s, parseAll=True))
-    except pp.ParseException, v:
+    except pp.ParseException as v:
         raise ParseException(v.msg, v.line, v.col)
 
 
@@ -1086,5 +1085,5 @@ def parse_requests(s):
             )
         ).parseString(s, parseAll=True)
         return [Request(i) for i in parts]
-    except pp.ParseException, v:
+    except pp.ParseException as v:
         raise ParseException(v.msg, v.line, v.col)

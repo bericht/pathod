@@ -35,7 +35,7 @@ def parse_size(s):
         return int(s)
     except ValueError:
         pass
-    for i in SIZE_UNITS.keys():
+    for i in list(SIZE_UNITS.keys()):
         if s.endswith(i):
             try:
                 return int(s[:-1]) * SIZE_UNITS[i]
@@ -73,7 +73,7 @@ def inner_repr(s):
         Returns the inner portion of a string or unicode repr (i.e. without the
         quotes)
     """
-    if isinstance(s, unicode):
+    if isinstance(s, str):
         return repr(s)[2:-1]
     else:
         return repr(s)[1:-1]
@@ -106,7 +106,7 @@ class Data:
         """
         fullpath = os.path.join(self.dirname, path)
         if not os.path.exists(fullpath):
-            raise ValueError, "dataPath: %s does not exist."%fullpath
+            raise ValueError("dataPath: %s does not exist."%fullpath)
         return fullpath
 
 
@@ -117,7 +117,7 @@ def daemonize(stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
         pid = os.fork()
         if pid > 0:
             sys.exit(0)
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
     os.chdir("/")
@@ -127,7 +127,7 @@ def daemonize(stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
         pid = os.fork()
         if pid > 0:
             sys.exit(0)
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
     si = open(stdin, 'rb')
